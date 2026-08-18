@@ -10,7 +10,9 @@ LD        := ld.lld
 TARGET    := i386-elf
 LINKER    := linker.ld
 
-SRCS_C    := main.c
+SRCS_C    := main.c \
+			 vga.c
+
 SRCS_S    := boot.S
 
 BUILD_DIR := build
@@ -24,11 +26,12 @@ CFLAGS    := -target $(TARGET) \
              -fno-builtin \
              -fno-stack-protector \
              -nostdlib \
-             -Wall -Wextra
+             -Wall -Wextra \
+			 -O3
 
 ASFLAGS   := -target $(TARGET)
 
-LDFLAGS   := -m elf_i386 -T $(LINKER)
+LDFLAGS   := -m elf_i386 -T $(LINKER) --strip-all
 
 
 .PHONY: all

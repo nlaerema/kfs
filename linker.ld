@@ -1,13 +1,10 @@
-ENTRY(_start)
-
 SECTIONS
 {
-    . = 1M;
+    . = 2M;
 
-    .multiboot :
+    .multiboot ALIGN(32) :
     {
         *(.multiboot)
-        *(.multiboot.*)
     }
 
     .text :
@@ -37,6 +34,12 @@ SECTIONS
 
     .boot_stack ALIGN(16) :
     {
+        boot_stack_bottom = .;
         *(.boot_stack)
+        boot_stack_top = .;
+    }
+
+    /DISCARD/ : {
+        *(.comment)
     }
 }

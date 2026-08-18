@@ -1,19 +1,22 @@
+#include <stddef.h>
+#include <stdint.h>
+
+#include "macro.h"
+#include "multiboot.h"
 #include "vga.h"
 
-static void vga_write(const char *str)
-{
-    for (size_t i = 0; str[i] != '\0'; i++) {
-        VGA_TEXT_BUFFER[i] = (uint16_t)str[i] | 0x0F00;
-    }
-}
+#define BOOT_STACK_SIZE 16384
 
+SECTION(".multiboot")
+const multiboot_header_t multiboot_header = MULTIBOOT_HEADER(0);
 
-[[noreturn]]
-void kernel_main(void)
-{
-    vga_write("Hello, World !");
+SECTION(".boot_stack")
+uint8_t boot_stack[BOOT_STACK_SIZE];
 
-    while (1) {
-        __asm__ __volatile__("hlt");
-    }
+void NORETURN kernel_main(void) {
+  vga_write("Hello, World !");
+
+  while (1) {
+    asm volatile("hlt");
+  }
 }
