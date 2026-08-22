@@ -2,9 +2,9 @@ SECTIONS
 {
     . = 2M;
 
-    .multiboot ALIGN(32) :
+    .multiboot :
     {
-        *(.multiboot)
+        *(.multiboot2)
     }
 
     .text :
@@ -32,7 +32,7 @@ SECTIONS
         *(COMMON)
     }
 
-    .boot_stack ALIGN(16) :
+    .boot_stack :
     {
         boot_stack_bottom = .;
         *(.boot_stack)

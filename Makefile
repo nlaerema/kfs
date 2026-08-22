@@ -10,16 +10,18 @@ LD        := ld.lld
 TARGET    := i386-elf
 LINKER    := linker.ld
 
-SRCS_C    := main.c \
-			 vga.c
-
-SRCS_S    := boot.S
+SRCS_C    := $(wildcard boot/*.c kernel/*.c drivers/*.c)
+SRCS_ASM  := $(wildcard boot/*.S)
 
 BUILD_DIR := build
 
 OBJS_C    := $(addprefix $(BUILD_DIR)/,$(SRCS_C:.c=.o))
-OBJS_S    := $(addprefix $(BUILD_DIR)/,$(SRCS_S:.S=.o))
-OBJS      := $(OBJS_S) $(OBJS_C)
+OBJS_ASM  := $(addprefix $(BUILD_DIR)/,$(SRCS_ASM:.S=.o))
+OBJS      := $(OBJS_ASM) $(OBJS_C)
+
+DEPS      := $(OBJS:.o=.d)
+
+DEBUG ?= 0
 
 CFLAGS    := -target $(TARGET) \
              -ffreestanding \
@@ -27,12 +29,21 @@ CFLAGS    := -target $(TARGET) \
              -fno-stack-protector \
              -nostdlib \
              -Wall -Wextra \
-			 -O3
+             -MMD -MP
+ifeq ($(DEBUG), 1)
+    CFLAGS += -g -O0
+else
+    CFLAGS += -O2
+endif
 
-ASFLAGS   := -target $(TARGET)
+ASFLAGS   := $(CFLAGS)
 
-LDFLAGS   := -m elf_i386 -T $(LINKER) --strip-all
+LDFLAGS   := -m elf_i386 -T $(LINKER)
+ifeq ($(DEBUG), 0)
+    LDFLAGS += --strip-all
+endif
 
+.DELETE_ON_ERROR:
 
 .PHONY: all
 all: $(BUILD_DIR)/$(KERNEL)
@@ -40,15 +51,19 @@ all: $(BUILD_DIR)/$(KERNEL)
 $(BUILD_DIR)/$(KERNEL): $(OBJS)
 	$(LD) $(LDFLAGS) -o $@ $(OBJS)
 
-$(BUILD_DIR)/%.o: %.c | $(BUILD_DIR)
-	$(CC) $(CFLAGS) -c $< -o $@
+$(BUILD_DIR)/%.o: %.c
+	mkdir -p $(dir $@)
+	$(CC) -Iinclude $(CFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/%.o: %.S | $(BUILD_DIR)
-	$(AS) $(ASFLAGS) -c $< -o $@
+$(BUILD_DIR)/%.o: %.S
+	mkdir -p $(dir $@)
+	$(AS) -Iinclude $(ASFLAGS) -c $< -o $@
 
-$(BUILD_DIR):
-	mkdir -p $@
+-include $(DEPS)
 
+.PHONY: compiledb
+compiledb:
+	bear -- $(MAKE) re
 
 .PHONY: iso
 iso: $(BUILD_DIR)/$(ISO)
@@ -63,14 +78,12 @@ $(BUILD_DIR)/$(ISO): $(BUILD_DIR)/$(KERNEL)
 run: iso
 	qemu-system-i386 -cdrom $(BUILD_DIR)/$(ISO)
 
-
 .PHONY: clean
 clean:
-	rm -f $(OBJS)
+	rm -rf $(BUILD_DIR)
 
 .PHONY: fclean
 fclean: clean
-	rm -rf $(BUILD_DIR)
 
 .PHONY: re
 re: fclean all
