@@ -19,8 +19,7 @@
  *  IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef MULTIBOOT_HEADER
-#define MULTIBOOT_HEADER 1
+#pragma once
 
 #include <stdint.h>
 
@@ -410,5 +409,3 @@ struct multiboot_tag_load_base_addr
 };
 
 #endif /*  ! ASM_FILE */
-
-#endif /*  ! MULTIBOOT_HEADER */

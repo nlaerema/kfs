@@ -10,13 +10,13 @@ LD        := ld.lld
 TARGET    := i386-elf
 LINKER    := linker.ld
 
-SRCS_C    := $(wildcard boot/*.c kernel/*.c drivers/*.c)
-SRCS_ASM  := $(wildcard boot/*.S)
+SRCS_C    := $(wildcard boot/*.c kernel/*.c)
+SRCS_ASM  := $(wildcard boot/*.S kernel/*.S)
 
 BUILD_DIR := build
 
-OBJS_C    := $(addprefix $(BUILD_DIR)/,$(SRCS_C:.c=.o))
-OBJS_ASM  := $(addprefix $(BUILD_DIR)/,$(SRCS_ASM:.S=.o))
+OBJS_C    := $(addprefix $(BUILD_DIR)/, $(addsuffix .o, $(SRCS_C)))
+OBJS_ASM  := $(addprefix $(BUILD_DIR)/, $(addsuffix .o, $(SRCS_ASM)))
 OBJS      := $(OBJS_ASM) $(OBJS_C)
 
 DEPS      := $(OBJS:.o=.d)
@@ -29,7 +29,8 @@ CFLAGS    := -target $(TARGET) \
              -fno-stack-protector \
              -nostdlib \
              -Wall -Wextra \
-             -MMD -MP
+             -MMD -MP \
+			 -std=c23
 ifeq ($(DEBUG), 1)
     CFLAGS += -g -O0
 else
@@ -51,11 +52,11 @@ all: $(BUILD_DIR)/$(KERNEL)
 $(BUILD_DIR)/$(KERNEL): $(OBJS)
 	$(LD) $(LDFLAGS) -o $@ $(OBJS)
 
-$(BUILD_DIR)/%.o: %.c
+$(BUILD_DIR)/%.c.o: %.c
 	mkdir -p $(dir $@)
 	$(CC) -Iinclude $(CFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/%.o: %.S
+$(BUILD_DIR)/%.S.o: %.S
 	mkdir -p $(dir $@)
 	$(AS) -Iinclude $(ASFLAGS) -c $< -o $@
 
