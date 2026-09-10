@@ -1,6 +1,7 @@
 #include "multiboot2.h"
 #include "attributes.h"
 
+
 #define HEADER(_architecture, _header_length) \
 (struct multiboot_header) { \
     .magic = MULTIBOOT2_HEADER_MAGIC, \

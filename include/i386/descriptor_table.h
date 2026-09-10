@@ -1,9 +1,11 @@
 #pragma once
 
+
 #include <stdint.h>
 
 #include "attributes.h"
 #include "i386/common.h"
+
 
 #define I386_NULL_DESCRIPTOR() \
     ((i386_descriptor_t) { \
@@ -92,7 +94,7 @@
     ((i386_descriptor_t) { \
         .call_gate = { \
             .offset_low     = (uint16_t)(_offset), \
-            .selector       = (uint16_t)(_selector), \
+            .selector       = (i386_segment_t)(_selector), \
             .param_count    = (_param_count), \
             .reserved       = 0, \
             .type           = I386_CALL_GATE_DESCRIPTOR, \
@@ -107,7 +109,7 @@
     ((i386_descriptor_t) { \
         .task_gate = { \
             .reserved0      = 0, \
-            .tss_selector   = (uint16_t)(_tss_selector), \
+            .tss_selector   = (i386_segment_t)(_tss_selector), \
             .reserved1      = 0, \
             .type           = I386_TASK_GATE_DESCRIPTOR, \
             .system         = 0, \
@@ -117,39 +119,40 @@
         } \
     })
 
-#define I386_INTERRUPT_GATE_DESCRIPTOR(_offset, _selector, _privilege_level) \
+#define I386_INTERRUPT_GATE_DESCRIPTOR(_handler, _selector, _privilege_level) \
     ((i386_descriptor_t) { \
         .interrupt_gate = { \
-            .offset_low     = (uint16_t)(_offset), \
-            .selector       = (uint16_t)(_selector), \
+            .offset_low     = (uint16_t)((uintptr_t)(_handler)), \
+            .selector       = (i386_segment_t)(_selector), \
             .reserved       = 0, \
             .type           = I386_INTERRUPT_GATE_DESCRIPTOR, \
             .system         = 0, \
             .privilege_level= (_privilege_level), \
             .present        = 1, \
-            .offset_high    = (uint16_t)((_offset) >> 16), \
+            .offset_high    = (uint16_t)((uintptr_t)(_handler) >> 16), \
         } \
     })
 
-#define I386_TRAP_GATE_DESCRIPTOR(_offset, _selector, _privilege_level) \
+#define I386_TRAP_GATE_DESCRIPTOR(_handler, _selector, _privilege_level) \
     ((i386_descriptor_t) { \
         .trap_gate = { \
-            .offset_low     = (uint16_t)(_offset), \
-            .selector       = (uint16_t)(_selector), \
+            .offset_low     = (uint16_t)((uintptr_t)(_handler)), \
+            .selector       = (i386_segment_t)(_selector), \
             .reserved       = 0, \
             .type           = I386_TRAP_GATE_DESCRIPTOR, \
             .system         = 0, \
             .privilege_level= (_privilege_level), \
             .present        = 1, \
-            .offset_high    = (uint16_t)((_offset) >> 16), \
+            .offset_high    = (uint16_t)((uintptr_t)(_handler) >> 16), \
         } \
     })
 
-#define I386_DESCRIPTOR_TABLE_REGISTER(_gdt, _length) \
+#define I386_DESCRIPTOR_TABLE_REGISTER(_descriptor, _length) \
     ((i386_descriptor_table_register_t) { \
         .limit = (sizeof(i386_descriptor_t) * (_length)) - 1, \
-        .base  = (_gdt), \
+        .base  = (_descriptor), \
     })
+
 
 typedef enum : uint8_t {
     I386_LDT_DESCRIPTOR            = 2,
@@ -160,7 +163,6 @@ typedef enum : uint8_t {
     I386_INTERRUPT_GATE_DESCRIPTOR = 14,
     I386_TRAP_GATE_DESCRIPTOR      = 15,
 } i386_system_descriptor_type_t;
-
 
 
 typedef struct PACKED {
@@ -184,6 +186,7 @@ typedef struct PACKED {
 
 static_assert(sizeof(i386_code_descriptor_t) == 8, "i386_code_descriptor_t must be 8 bytes");
 
+
 typedef struct PACKED {
     uint16_t               limit_low;
     uint16_t               base_low;
@@ -205,6 +208,7 @@ typedef struct PACKED {
 
 static_assert(sizeof(i386_data_descriptor_t) == 8, "i386_data_descriptor_t must be 8 bytes");
 
+
 typedef struct PACKED {
     uint16_t                      limit_low;
     uint16_t                      base_low;
@@ -220,6 +224,7 @@ typedef struct PACKED {
 } i386_ldt_descriptor_t;
 
 static_assert(sizeof(i386_ldt_descriptor_t) == 8, "i386_ldt_descriptor_t must be 8 bytes");
+
 
 typedef struct PACKED {
     uint16_t                      limit_low;
@@ -237,9 +242,10 @@ typedef struct PACKED {
 
 static_assert(sizeof(i386_tss_descriptor_t) == 8, "i386_tss_descriptor_t must be 8 bytes");
 
+
 typedef struct PACKED {
     uint16_t                      offset_low;
-    uint16_t                      selector;
+    i386_segment_t                selector;
     uint8_t                       param_count     : 5;
     uint8_t                       reserved        : 3;  // = 0
     i386_system_descriptor_type_t type            : 4;  // = I386_CALL_GATE_DESCRIPTOR
@@ -251,9 +257,10 @@ typedef struct PACKED {
 
 static_assert(sizeof(i386_call_gate_descriptor_t) == 8, "i386_call_gate_descriptor_t must be 8 bytes");
 
+
 typedef struct PACKED {
     uint16_t                      reserved0;
-    uint16_t                      tss_selector;
+    i386_segment_t                tss_selector;
     uint8_t                       reserved1;
     i386_system_descriptor_type_t type            : 4;  // = I386_TASK_GATE_DESCRIPTOR
     bool                          system          : 1;  // = 0
@@ -264,9 +271,10 @@ typedef struct PACKED {
 
 static_assert(sizeof(i386_task_gate_descriptor_t) == 8, "i386_task_gate_descriptor_t must be 8 bytes");
 
+
 typedef struct PACKED {
     uint16_t                      offset_low;
-    uint16_t                      selector;
+    i386_segment_t                selector;
     uint8_t                       reserved        : 8;  // = 0
     i386_system_descriptor_type_t type            : 4;  // = I386_INTERRUPT_GATE_DESCRIPTOR
     bool                          system          : 1;  // = 0
@@ -277,9 +285,10 @@ typedef struct PACKED {
 
 static_assert(sizeof(i386_interrupt_gate_descriptor_t) == 8, "i386_interrupt_gate_descriptor_t must be 8 bytes");
 
+
 typedef struct PACKED {
     uint16_t                      offset_low;
-    uint16_t                      selector;
+    i386_segment_t                selector;
     uint8_t                       reserved        : 8;  // = 0
     i386_system_descriptor_type_t type            : 4;  // = I386_TRAP_GATE_DESCRIPTOR
     bool                          system          : 1;  // = 0
@@ -289,6 +298,7 @@ typedef struct PACKED {
 } i386_trap_gate_descriptor_t;
 
 static_assert(sizeof(i386_trap_gate_descriptor_t) == 8, "i386_trap_gate_descriptor_t must be 8 bytes");
+
 
 typedef union PACKED {
     uint64_t                         raw;

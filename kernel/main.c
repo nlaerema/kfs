@@ -3,15 +3,21 @@
 
 #include "attributes.h"
 #include "gdt.h"
+#include "idt.h"
 #include "vga.h"
+
 
 #define HEXA "0123456789ABCDEF"
 
+
 NORETURN
 REGPARAM(2)
-void kernel_main(uint32_t magic, void* addr)
+void kernel_main(uint32_t magic, UNUSED void* addr)
 {
     setup_gdt();
+    setup_idt();
+
+    __asm__ volatile("int $0x00");
 
     char magic_str[9];
 
@@ -20,7 +26,7 @@ void kernel_main(uint32_t magic, void* addr)
     }
     magic_str[8] = '\0';
 
-    vga_write(magic_str);
+    vga_write(magic_str, 0);
 
     while (1) {
         __asm__ volatile("hlt");

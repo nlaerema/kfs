@@ -1,8 +1,9 @@
 #pragma once
 
+
 #include "attributes.h"
-#include "i386/segment.h"
 #include "i386/descriptor_table.h"
+
 
 REGPARAM(1)
 void load_gdt(const i386_descriptor_table_register_t* gdt_register);

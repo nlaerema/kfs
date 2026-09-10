@@ -1,17 +1,18 @@
 #include "gdt.h"
-
 #include "i386/descriptor_table.h"
-#include "i386/segment.h"
+
 
 #define GDT_COUNT 3
 #define GDT_ALIGN 8
 
+
 ALIGN(GDT_ALIGN)
-i386_descriptor_t gdt[GDT_COUNT] = {
+static i386_descriptor_t gdt[GDT_COUNT] = {
     I386_NULL_DESCRIPTOR(),
     I386_CODE_DESCRIPTOR(0, 0xFFFFF, I386_RING_0, 1, 1, 0, 1),
     I386_DATA_DESCRIPTOR(0, 0xFFFFF, I386_RING_0, 1, 1, 0, 1),
 };
+
 
 void setup_gdt(void)
 {
