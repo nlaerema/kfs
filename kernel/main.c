@@ -2,6 +2,7 @@
 #include <stdint.h>
 
 #include "attributes.h"
+#include "multiboot2.h"
 #include "gdt.h"
 #include "idt.h"
 #include "vga.h"
@@ -12,21 +13,18 @@
 
 NORETURN
 REGPARAM(2)
-void kernel_main(uint32_t magic, UNUSED void* addr)
+void kernel_main(multiboot_bootloader_magic_t magic, UNUSED const multiboot_info_t* mbi)
 {
     setup_gdt();
     setup_idt();
 
     __asm__ volatile("int $0x00");
 
-    char magic_str[9];
-
-    for (int i = 0; i < 8; i++) {
-        magic_str[7 - i] = HEXA[(magic >> (i * 4)) & 0xF];
+    if (magic != MULTIBOOT2_BOOTLOADER_MAGIC) {
+        vga_write("FAILED", 0);
+    } else {
+        vga_write("SUCCESS", 0);
     }
-    magic_str[8] = '\0';
-
-    vga_write(magic_str, 0);
 
     while (1) {
         __asm__ volatile("hlt");
