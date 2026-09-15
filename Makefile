@@ -69,10 +69,12 @@ compiledb:
 .PHONY: iso
 iso: $(BUILD_DIR)/$(ISO)
 
-$(BUILD_DIR)/$(ISO): $(BUILD_DIR)/$(KERNEL)
-	mkdir -p $(BUILD_DIR)/iso/boot/grub
+$(BUILD_DIR)/iso/boot/grub/grub.cfg: grub.cfg.j2
+	mkdir -p $(dir $@)
+	minijinja-cli --strict $< -D NAME=$(NAME) -D KERNEL=$(KERNEL) -o $@
+
+$(BUILD_DIR)/$(ISO): $(BUILD_DIR)/$(KERNEL) $(BUILD_DIR)/iso/boot/grub/grub.cfg
 	cp $(BUILD_DIR)/$(KERNEL) $(BUILD_DIR)/iso/boot/$(KERNEL)
-	NAME=$(NAME) KERNEL=$(KERNEL) tera -f grub.cfg.tera --env > $(BUILD_DIR)/iso/boot/grub/grub.cfg
 	grub-mkrescue -o $@ $(BUILD_DIR)/iso
 
 .PHONY: run
