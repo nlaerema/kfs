@@ -10,7 +10,7 @@ LD        := ld.lld
 TARGET    := i386-elf
 LINKER    := linker.ld
 
-SRCS_C    := $(wildcard boot/*.c kernel/*.c)
+SRCS_C    := $(wildcard boot/*.c kernel/*.c drivers/*.c lib/*.c)
 SRCS_ASM  := $(wildcard boot/*.S kernel/*.S)
 
 BUILD_DIR := build
@@ -22,6 +22,8 @@ OBJS      := $(OBJS_ASM) $(OBJS_C)
 DEPS      := $(OBJS:.o=.d)
 
 DEBUG ?= 0
+
+CPPFLAGS  := -I. -Iinclude
 
 CFLAGS    := -target $(TARGET) \
              -ffreestanding \
@@ -54,11 +56,11 @@ $(BUILD_DIR)/$(KERNEL): $(OBJS)
 
 $(BUILD_DIR)/%.c.o: %.c
 	mkdir -p $(dir $@)
-	$(CC) -Iinclude $(CFLAGS) -c $< -o $@
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 $(BUILD_DIR)/%.S.o: %.S
 	mkdir -p $(dir $@)
-	$(AS) -Iinclude $(ASFLAGS) -c $< -o $@
+	$(AS) $(CPPFLAGS) $(ASFLAGS) -c $< -o $@
 
 -include $(DEPS)
 

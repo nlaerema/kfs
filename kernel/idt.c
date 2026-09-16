@@ -1,7 +1,7 @@
 #include "idt.h"
 #include "attributes.h"
 #include "i386/descriptor_table.h"
-#include "vga.h"
+#include "drivers/vga.h"
 
 
 #define IDT_COUNT 256
