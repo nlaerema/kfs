@@ -1,10 +1,11 @@
+#include "vga.h"
+
+#include "lib/attributes.h"
+#include "lib/format.h"
+
 #include <stdarg.h>
 #include <stdint.h>
 #include <stddef.h>
-
-#include "vga.h"
-#include "attributes.h"
-#include "lib/format.h"
 
 
 #define VGA_DEFAULT_MEMORY ((volatile vga_cell_t *)0xB8000)

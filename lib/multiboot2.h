@@ -1,9 +1,9 @@
 #pragma once
 
 
-#include <stdint.h>
-
 #include "attributes.h"
+
+#include <stdint.h>
 
 
 #define MULTIBOOT_SEARCH       32768

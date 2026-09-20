@@ -1,10 +1,10 @@
 #pragma once
 
 
-#include <stdint.h>
+#include "lib/attributes.h"
+#include "lib/i386/segment.h"
 
-#include "attributes.h"
-#include "i386/common.h"
+#include <stdint.h>
 
 
 #define I386_NULL_DESCRIPTOR() \

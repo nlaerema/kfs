@@ -11,25 +11,23 @@ TARGET    := i386-elf
 LINKER    := linker.ld
 
 SRCS_C    := $(wildcard boot/*.c kernel/*.c drivers/*.c lib/*.c)
-SRCS_ASM  := $(wildcard boot/*.S kernel/*.S)
+SRCS_AS   := $(wildcard boot/*.s kernel/*.s)
 
 BUILD_DIR := build
 
 OBJS_C    := $(addprefix $(BUILD_DIR)/, $(addsuffix .o, $(SRCS_C)))
-OBJS_ASM  := $(addprefix $(BUILD_DIR)/, $(addsuffix .o, $(SRCS_ASM)))
-OBJS      := $(OBJS_ASM) $(OBJS_C)
+OBJS_AS   := $(addprefix $(BUILD_DIR)/, $(addsuffix .o, $(SRCS_AS)))
+OBJS      := $(OBJS_AS) $(OBJS_C)
 
 DEPS      := $(OBJS:.o=.d)
 
 DEBUG ?= 0
 
-CPPFLAGS  := -I. -Iinclude
+INCLUDES  := -I.
 
 CFLAGS    := -target $(TARGET) \
              -ffreestanding \
-             -fno-builtin \
              -fno-stack-protector \
-             -nostdlib \
              -Wall -Wextra \
              -MMD -MP \
 			 -std=c23
@@ -39,7 +37,7 @@ else
     CFLAGS += -O2
 endif
 
-ASFLAGS   := $(CFLAGS)
+ASFLAGS   := -target $(TARGET)
 
 LDFLAGS   := -m elf_i386 -T $(LINKER)
 ifeq ($(DEBUG), 0)
@@ -51,16 +49,16 @@ endif
 .PHONY: all
 all: $(BUILD_DIR)/$(KERNEL)
 
-$(BUILD_DIR)/$(KERNEL): $(OBJS)
+$(BUILD_DIR)/$(KERNEL): $(OBJS) $(LINKER)
 	$(LD) $(LDFLAGS) -o $@ $(OBJS)
 
 $(BUILD_DIR)/%.c.o: %.c
 	mkdir -p $(dir $@)
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+	$(CC) $(INCLUDES) $(CFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/%.S.o: %.S
+$(BUILD_DIR)/%.s.o: %.s
 	mkdir -p $(dir $@)
-	$(AS) $(CPPFLAGS) $(ASFLAGS) -c $< -o $@
+	$(AS) $(INCLUDES) $(ASFLAGS) -c $< -o $@
 
 -include $(DEPS)
 
@@ -91,4 +89,5 @@ clean:
 fclean: clean
 
 .PHONY: re
-re: fclean all
+re: fclean
+	$(MAKE) all

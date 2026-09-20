@@ -1,9 +1,10 @@
 #pragma once
 
+#include "lib/attributes.h"
+
 #include <stddef.h>
 #include <stdint.h>
 
-#include "attributes.h"
 
 typedef enum : uint8_t {
     VGA_BLACK         = 0x0,

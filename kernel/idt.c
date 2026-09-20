@@ -1,11 +1,24 @@
 #include "idt.h"
-#include "attributes.h"
-#include "i386/descriptor_table.h"
+
 #include "drivers/vga.h"
+
+#include "lib/attributes.h"
+#include "lib/i386/descriptor_table.h"
 
 
 #define IDT_COUNT 256
 #define IDT_ALIGN 8
+
+
+REGPARAM(1)
+void load_idt(const i386_descriptor_table_register_t* idt_register);
+
+
+typedef struct {
+    uint32_t eip;
+    uint32_t cs;
+    uint32_t eflags;
+} i386_interrupt_frame_t;
 
 
 ALIGN(IDT_ALIGN)

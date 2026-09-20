@@ -1,6 +1,6 @@
-#include <stdint.h>
+#include "lib/attributes.h"
 
-#include "attributes.h"
+#include <stdint.h>
 
 
 #define BOOT_STACK_ALIGN 8

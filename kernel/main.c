@@ -1,15 +1,18 @@
-#include <stddef.h>
-#include <stdint.h>
-
-#include "drivers/vga.h"
-#include "attributes.h"
-#include "multiboot2.h"
-#include "macros.h"
 #include "gdt.h"
 #include "idt.h"
 
+#include "drivers/vga.h"
+
+#include "lib/attributes.h"
+#include "lib/multiboot2.h"
+#include "lib/macros.h"
+
+#include <stddef.h>
+#include <stdint.h>
+
 
 #define HEXA "0123456789ABCDEF"
+
 
 NORETURN
 void halt(void)

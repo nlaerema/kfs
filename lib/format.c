@@ -1,8 +1,8 @@
+#include "format.h"
+
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
-
-#include "format.h"
 
 
 #define LOWERCASE_BASE_CHARSET "0123456789abcdefghijklmnopqrstuvwxyz"

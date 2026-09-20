@@ -1,5 +1,5 @@
-#include "multiboot2.h"
-#include "attributes.h"
+#include "lib/multiboot2.h"
+#include "lib/attributes.h"
 
 
 typedef struct {

@@ -1,7 +1,7 @@
 .intel_syntax
 
 
-.include "macros.inc"
+.include "lib/macros.inc"
 
 
 .text
