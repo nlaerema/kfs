@@ -41,6 +41,16 @@ void kernel_main(multiboot_bootloader_magic_t magic, UNUSED const multiboot_info
             char b = HEXA[((i + 3) % 16)];
             char k = HEXA[(i % 2)];
             vga_printf(ESC"F%cB%cK%c;Counter: %u\n", f, b, k, i);
+            if (i % 25 == 0) {
+                vga_scroll();
+                vga_scroll();
+                vga_scroll();
+                vga_scroll();
+                vga_scroll();
+                vga_scroll();
+                vga_scroll();
+                vga_scroll();
+            }
             i ++;
         }
         op++;

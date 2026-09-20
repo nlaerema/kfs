@@ -7,19 +7,12 @@
 #include "lib/format.h"
 
 
-#define VGA_MEMORY ((volatile vga_cell_t *)0xB8000)
+#define VGA_DEFAULT_MEMORY ((volatile vga_cell_t *)0xB8000)
 
-#define VGA_COLS 80
-#define VGA_ROWS 25
+#define VGA_DEFAULT_WIDTH 80
+#define VGA_DEFAULT_HEIGHT 25
 
-#define EMPTY_CELL ((vga_cell_t) { \
-    .character = ' ', \
-    .attribute = { \
-        .foreground = VGA_WHITE, \
-        .background = VGA_BLACK, \
-        .blink      = false, \
-    } \
-})
+#define EMPTY_CELL ((vga_cell_t) {.raw = 0})
 
 
 typedef enum {
@@ -47,29 +40,43 @@ typedef struct PACKED {
     bool        blink      : 1;
 } vga_cell_attribute_t;
 
-typedef struct PACKED {
-    char                 character;
-    vga_cell_attribute_t attribute;
+typedef union PACKED {
+    uint16_t raw;
+
+    struct PACKED {
+        char                 character;
+        vga_cell_attribute_t attribute;
+    };
 } vga_cell_t;
 
 static_assert(sizeof(vga_cell_t) == 2, "vga_cell_t must be 2 bytes");
 
 
 static struct {
-    int                  col;
-    int                  row;
+    volatile vga_cell_t* framebuffer;
+    int width;
+    int height;
+
+    int x;
+    int y;
 
     vga_cell_attribute_t attribute;
 
     escape_ctx_t escape;
 } s_vga_ctx = {
-    .col       = 0,
-    .row       = 0,
+    .framebuffer = VGA_DEFAULT_MEMORY,
+    .width       = VGA_DEFAULT_WIDTH,
+    .height      = VGA_DEFAULT_HEIGHT,
+
+    .x = 0,
+    .y = 0,
+
     .attribute = {
         .foreground = VGA_WHITE,
         .background = VGA_BLACK,
         .blink      = false,
     },
+
     .escape = {
         .state = ESCAPE_STATE_NONE,
         .type  = ESCAPE_TYPE_UNKNOWN,
@@ -80,22 +87,22 @@ static struct {
 NO_CALLER_SAVED_REGISTERS
 static vga_cell_t _get_cell(int col, int row)
 {
-    return VGA_MEMORY[row * VGA_COLS + col];
+    return s_vga_ctx.framebuffer[row * s_vga_ctx.width + col];
 }
 
 NO_CALLER_SAVED_REGISTERS
 static void _set_cell(int col, int row, vga_cell_t value)
 {
-    VGA_MEMORY[row * VGA_COLS + col] = value;
+    s_vga_ctx.framebuffer[row * s_vga_ctx.width + col] = value;
 }
 
 NO_CALLER_SAVED_REGISTERS
 static void _new_line(void)
 {
-    s_vga_ctx.col = 0;
-    s_vga_ctx.row++;
+    s_vga_ctx.x = 0;
+    s_vga_ctx.y++;
 
-    if (s_vga_ctx.row >= VGA_ROWS) {
+    if (s_vga_ctx.y >= s_vga_ctx.height) {
         vga_scroll();
     }
 }
@@ -190,21 +197,21 @@ static void _printf_put(UNUSED void *ctx, char c)
 NO_CALLER_SAVED_REGISTERS
 void vga_scroll(void)
 {
-    if (s_vga_ctx.row <= 0) {
+    if (s_vga_ctx.y <= 0) {
         return;
     }
 
-    for (int row = 1; row < VGA_ROWS; row++) {
-        for (int col = 0; col < VGA_COLS; col++) {
+    for (int row = 1; row < s_vga_ctx.height; row++) {
+        for (int col = 0; col < s_vga_ctx.width; col++) {
             _set_cell(col, row - 1, _get_cell(col, row));
         }
     }
 
-    for (int col = 0; col < VGA_COLS; col++) {
-        _set_cell(col, VGA_ROWS - 1, EMPTY_CELL); 
+    for (int col = 0; col < s_vga_ctx.width; col++) {
+        _set_cell(col, s_vga_ctx.height - 1, EMPTY_CELL); 
     }
 
-    s_vga_ctx.row--;
+    s_vga_ctx.y--;
 }
 
 NO_CALLER_SAVED_REGISTERS
@@ -220,14 +227,14 @@ size_t vga_put(char c)
             _new_line();
             return 0;
         case '\r':
-            s_vga_ctx.col = 0;
+            s_vga_ctx.x = 0;
             return 0;
     }
 
-    _set_cell(s_vga_ctx.col, s_vga_ctx.row, _make_cell(c));
+    _set_cell(s_vga_ctx.x, s_vga_ctx.y, _make_cell(c));
 
-    s_vga_ctx.col++;
-    if (s_vga_ctx.col >= VGA_COLS) {
+    s_vga_ctx.x++;
+    if (s_vga_ctx.x >= s_vga_ctx.width) {
         _new_line();
     }
 
