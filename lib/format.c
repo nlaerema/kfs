@@ -149,6 +149,10 @@ size_t vfnprintf(format_put_t put, void* ctx, const char* format, va_list args)
 {
     size_t total = 0;
 
+    if (format == NULL) {
+        return 0;
+    }
+
     while (*format != '\0') {
         if (*format == '%') {
             format++;

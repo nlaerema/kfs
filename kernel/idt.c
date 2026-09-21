@@ -1,13 +1,17 @@
 #include "idt.h"
+#include "halt.h"
 
 #include "drivers/vga.h"
 
-#include "lib/attributes.h"
 #include "lib/i386/descriptor_table.h"
+#include "lib/attributes.h"
+#include "lib/macros.h"
 
 
 #define IDT_COUNT 256
 #define IDT_ALIGN 8
+
+#define DIVIDE_ERROR_MESSAGE ESC"FcB0K0;Divide error\n"
 
 
 void load_idt(const i386_descriptor_table_register_t* idt_register);
@@ -27,7 +31,8 @@ static i386_descriptor_t idt[IDT_COUNT];
 INTERRUPT
 static void divide_error_handler(UNUSED i386_interrupt_frame_t* frame)
 {
-    vga_write("DIVISION BY ZERO", 1);
+    vga_write(DIVIDE_ERROR_MESSAGE, sizeof(DIVIDE_ERROR_MESSAGE) - 1);
+    halt();
 }
 
 void setup_idt(void)

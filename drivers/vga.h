@@ -5,7 +5,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-
 typedef enum : uint8_t {
     VGA_BLACK         = 0x0,
     VGA_BLUE          = 0x1,
