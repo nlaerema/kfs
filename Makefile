@@ -11,7 +11,7 @@ TARGET    := i386-elf
 LINKER    := linker.ld
 
 SRCS_C    := $(wildcard boot/*.c kernel/*.c drivers/*.c lib/*.c)
-SRCS_AS   := $(wildcard boot/*.s kernel/*.s)
+SRCS_AS   := $(wildcard boot/*.s kernel/*.s lib/*.s)
 
 BUILD_DIR := build
 
@@ -28,6 +28,7 @@ INCLUDES  := -I.
 CFLAGS    := -target $(TARGET) \
              -ffreestanding \
              -fno-stack-protector \
+			 -mregparm=3 \
              -Wall -Wextra \
              -MMD -MP \
 			 -std=c23

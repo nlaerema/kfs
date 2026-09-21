@@ -23,7 +23,6 @@ void halt(void)
 }
 
 NORETURN
-REGPARAM(2)
 void kernel_main(multiboot_bootloader_magic_t magic, UNUSED const multiboot_info_t* mbi)
 {
     setup_gdt();

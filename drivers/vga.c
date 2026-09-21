@@ -2,18 +2,30 @@
 
 #include "lib/attributes.h"
 #include "lib/format.h"
+#include "lib/io.h"
 
 #include <stdarg.h>
 #include <stdint.h>
 #include <stddef.h>
 
 
-#define VGA_DEFAULT_MEMORY ((volatile vga_cell_t *)0xB8000)
+#define VGA_MEMORY ((volatile vga_cell_t *)0xB8000)
 
 #define VGA_DEFAULT_WIDTH 80
 #define VGA_DEFAULT_HEIGHT 25
 
-#define EMPTY_CELL ((vga_cell_t) {.raw = 0})
+#define INDEX_PORT 0x3D4
+#define DATA_PORT  0x3D5
+
+#define EMPTY_CELL \
+    ((vga_cell_t) { \
+        .character = ' ', \
+        .attribute = { \
+            .foreground = VGA_WHITE, \
+            .background = VGA_BLACK, \
+            .blink      = false, \
+        }, \
+    })
 
 
 typedef enum {
@@ -58,6 +70,9 @@ static struct {
     int width;
     int height;
 
+    uint16_t index_port;
+    uint16_t data_port;
+
     int x;
     int y;
 
@@ -65,9 +80,12 @@ static struct {
 
     escape_ctx_t escape;
 } s_vga_ctx = {
-    .framebuffer = VGA_DEFAULT_MEMORY,
+    .framebuffer = VGA_MEMORY,
     .width       = VGA_DEFAULT_WIDTH,
     .height      = VGA_DEFAULT_HEIGHT,
+
+    .index_port = INDEX_PORT,
+    .data_port  = DATA_PORT,
 
     .x = 0,
     .y = 0,
@@ -85,30 +103,31 @@ static struct {
 };
 
 
-NO_CALLER_SAVED_REGISTERS
+PRESERVE_ALL_REGS
 static vga_cell_t _get_cell(int col, int row)
 {
     return s_vga_ctx.framebuffer[row * s_vga_ctx.width + col];
 }
 
-NO_CALLER_SAVED_REGISTERS
+PRESERVE_ALL_REGS
 static void _set_cell(int col, int row, vga_cell_t value)
 {
     s_vga_ctx.framebuffer[row * s_vga_ctx.width + col] = value;
 }
 
-NO_CALLER_SAVED_REGISTERS
-static void _new_line(void)
+PRESERVE_ALL_REGS
+static void _move_cursor(int x, int y)
 {
-    s_vga_ctx.x = 0;
-    s_vga_ctx.y++;
+    uint16_t pos = y * s_vga_ctx.width + x;
 
-    if (s_vga_ctx.y >= s_vga_ctx.height) {
-        vga_scroll();
-    }
+    out8(s_vga_ctx.index_port, 0x0F);
+    out8(s_vga_ctx.data_port, (uint8_t)(pos & 0xFF));
+
+    out8(s_vga_ctx.index_port, 0x0E);
+    out8(s_vga_ctx.data_port, (uint8_t)((pos >> 8) & 0xFF));
 }
 
-NO_CALLER_SAVED_REGISTERS
+PRESERVE_ALL_REGS
 static vga_cell_t _make_cell(char c)
 {
     return (vga_cell_t) {
@@ -117,7 +136,7 @@ static vga_cell_t _make_cell(char c)
     };
 }
 
-NO_CALLER_SAVED_REGISTERS
+PRESERVE_ALL_REGS
 static uint8_t _hex_digit_to_value(char c)
 {
     if (c >= '0' && c <= '9') {
@@ -131,7 +150,7 @@ static uint8_t _hex_digit_to_value(char c)
     }
 }
 
-NO_CALLER_SAVED_REGISTERS
+PRESERVE_ALL_REGS
 static escape_type_t _escape_type_from_char(char c)
 {
     switch (c) {
@@ -151,7 +170,7 @@ static escape_type_t _escape_type_from_char(char c)
     }
 }
 
-NO_CALLER_SAVED_REGISTERS
+PRESERVE_ALL_REGS
 static void _escape(char c)
 {
     switch (s_vga_ctx.escape.state) {
@@ -190,13 +209,14 @@ static void _escape(char c)
     }
 }
 
-static void _printf_put(UNUSED void *ctx, char c)
+PRESERVE_ALL_REGS
+static void _cursor(void)
 {
-    vga_put(c);
+    _move_cursor(s_vga_ctx.x, s_vga_ctx.y);
 }
 
-NO_CALLER_SAVED_REGISTERS
-void vga_scroll(void)
+PRESERVE_ALL_REGS
+static void _scroll(void)
 {
     if (s_vga_ctx.y <= 0) {
         return;
@@ -215,21 +235,32 @@ void vga_scroll(void)
     s_vga_ctx.y--;
 }
 
-NO_CALLER_SAVED_REGISTERS
-size_t vga_put(char c)
+PRESERVE_ALL_REGS
+static void _new_line(void)
+{
+    s_vga_ctx.x = 0;
+    s_vga_ctx.y++;
+
+    if (s_vga_ctx.y >= s_vga_ctx.height) {
+        _scroll();
+    }
+}
+
+PRESERVE_ALL_REGS
+static void _put(char c)
 {
     if (s_vga_ctx.escape.state != ESCAPE_STATE_NONE || c == '\x1b') {
         _escape(c);
-        return 0;
+        return;
     }
 
     switch (c) {
         case '\n':
             _new_line();
-            return 0;
+            return;
         case '\r':
             s_vga_ctx.x = 0;
-            return 0;
+            return;
     }
 
     _set_cell(s_vga_ctx.x, s_vga_ctx.y, _make_cell(c));
@@ -238,20 +269,39 @@ size_t vga_put(char c)
     if (s_vga_ctx.x >= s_vga_ctx.width) {
         _new_line();
     }
-
-    return 1;
 }
 
-NO_CALLER_SAVED_REGISTERS
-size_t vga_write(const void* data, size_t size)
+static void _printf_put(UNUSED void *ctx, char c)
+{
+    _put(c);
+}
+
+
+
+PRESERVE_ALL_REGS
+void vga_scroll(void)
+{
+    _scroll();
+    _cursor();
+}
+
+PRESERVE_ALL_REGS
+void vga_put(char c)
+{
+    _put(c);
+    _cursor();
+}
+
+PRESERVE_ALL_REGS
+void vga_write(const void* data, size_t size)
 {
     const char* bytes = (const char*)data;
 
     for (size_t i = 0; i < size; i++) {
-        vga_put(bytes[i]);
+        _put(bytes[i]);
     }
 
-    return size;
+    _cursor();
 }
 
 size_t vga_printf(const char* format, ...)
@@ -261,6 +311,8 @@ size_t vga_printf(const char* format, ...)
     va_start(args, format);
     size_t total = vfnprintf(_printf_put, NULL, format, args);
     va_end(args);
+
+    _cursor();
 
     return total;
 }

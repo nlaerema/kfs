@@ -25,13 +25,13 @@ typedef enum : uint8_t {
     VGA_WHITE         = 0xF,
 } vga_color_t;
 
-NO_CALLER_SAVED_REGISTERS
+PRESERVE_ALL_REGS
 void vga_scroll(void);
 
-NO_CALLER_SAVED_REGISTERS
-size_t vga_put(char c);
+PRESERVE_ALL_REGS
+void vga_put(char c);
 
-NO_CALLER_SAVED_REGISTERS
-size_t vga_write(const void* data, size_t size);
+PRESERVE_ALL_REGS
+void vga_write(const void* data, size_t size);
 
 size_t vga_printf(const char* format, ...);

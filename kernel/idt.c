@@ -10,7 +10,6 @@
 #define IDT_ALIGN 8
 
 
-REGPARAM(1)
 void load_idt(const i386_descriptor_table_register_t* idt_register);
 
 
